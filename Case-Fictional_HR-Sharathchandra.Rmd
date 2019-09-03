@@ -1,0 +1,65 @@
+---
+title: "Diamond Resorts - HR Case Study"
+author: 'Sharathchandra BM ; Contact No: 315-278-4479'
+---
+
+Libraries used
+
+```{r}
+library(readxl)
+library(dplyr)
+library(arules)
+library(arulesViz)
+```
+
+Sheet = "Revised_HTM_EA_Data" is read from the Excel Workbook.
+
+```{r}
+data <- na.omit(read_excel("C:/Users/Sharathchandra/Desktop/Skill Assessment/Diamond_Resorts/Case-Fictional_HR-Sharathchandra.xlsx",sheet = "Revised_HTM_EA_Data"))
+```
+
+Data is cleansed and modified majorily in MS Excel as part of Excel Analytics - Pivot Tables & Analysis. The numerical values in columns except "EmployeeNumber" column has been put into bins and thus are characterized in Excel and then factrozied in R. Please see the formula applied for each column in Excel Sheet = "Revised_HTM_EA_Data". This is done as a prerequiste to apply Apriori algorithm on the dataset. And, more importantly with words and bins it is easier to decode reasons for Attrition value and at the same time, to give a clear picture to the executives.
+
+Attrition = No, 1233 observations
+Attrition = Yes, 237 observations
+Total = 1470 observations
+
+```{r}
+data <- data %>% mutate_if(is.character, funs(as.factor))
+data <- data[,-c(1)]
+```
+
+First, I wanted to see the main factors affecting employees to stay and continue their employment in the company. Thus, I have checked for rules only with RHS equal to "Attrition=No". I have tuned the algorithm according to the number of observations in the dataset.
+
+I have made sure to remove the redundant rules and only take unique rules under consideration. These rules gives us a story of what factors are leading to employees to stay employed in the company. The visualization of the rules are sorted by confidence (With 90% confidence, these factors are important) and colored by lift (How many times these factors have occurred in rules?). 
+
+```{r}
+rulesHR1 <- apriori(data, parameter = list(supp = 0.1, conf = 0.9, maxlen = 5), appearance = list(default = "lhs", rhs = "Attrition=No"),control = list(verbose=F))
+subsetRules1 <- which(colSums(is.subset(rulesHR1, rulesHR1)) > 1)
+length(subsetRules1) 
+rulesHRAttritionNo  <- rulesHR1[-subsetRules1]
+length(rulesHRAttritionNo)
+summary(rulesHRAttritionNo)
+rulesConf1 <- sort(rulesHRAttritionNo, by = "confidence", decreasing = T)
+inspect(head(rulesConf1))
+rulesHRAttritionNoViz <- plot(rulesConf1, method = "graph")
+```
+
+Then, Iwanted to check for main factors affecting employees to quit their employment and leave the company. Thus, I have checked for rules only with RHS equal to "Attrition=Yes". I have tuned the algorithm according to the number of observations in the dataset.
+
+Same principle as explained before.
+
+```{r}
+rulesHR2 <- apriori(data, parameter = list(supp = 0.0025, conf = 0.9, maxlen = 5), appearance = list(default = "lhs", rhs = "Attrition=Yes"),control = list(verbose=F))
+length(rulesHR2)
+subsetRules2 <- which(colSums(is.subset(rulesHR2, rulesHR2)) > 1)
+length(subsetRules2) 
+rulesHRAttritionYes  <- rulesHR2[-subsetRules2]
+length(rulesHRAttritionYes)
+summary(rulesHRAttritionYes)
+rulesConf2 <- sort(rulesHRAttritionYes, by = "confidence", decreasing = T)
+inspect(head(rulesConf2))
+rulesHRAttritionYesViz <- plot(rulesConf2, method = "graph")
+```
+
+Apart from this R Notebook, please do see the attached Excel for Analytics, Visualizations & Pivot Table and Word Document for Executive summary and Visualizations.
